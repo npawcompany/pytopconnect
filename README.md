@@ -1,2 +1,2 @@
 # TopConect (TC)
-This module allows you to make a lot of queries to databases, thereby increasing production, replacing unnecessary queries at once, which increases the program's running time.
+This module allows you to perform multiple database queries, thereby improving performance by simultaneously replacing unnecessary queries.
