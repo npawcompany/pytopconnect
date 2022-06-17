@@ -21,10 +21,14 @@ DB_SQLITE = QR('sqlite',DATA)
 ```
 ### Getting data
 ```py
-# MySQL
-obj = DB_MYSQL.database_name.table_name.get(tabel=None,condition=None,columns="*")
-# SQLITE
-obj = DB_SQLITE.database_name.table_name.get(tabel=None,condition=None,columns="*")
+condition = {
+    "where":{
+        "id":[">",0],
+        "option":[]
+    }
+}
+obj = DB_MYSQL.database_name.table_name.get(tabel=None,condition=condition,columns="*")
+# [{"id":1,"name":"Ben","age":10},{"id":2,"name":"Poll","age":12}]
 ```
 #### Parameters for the get method
 - 'tabel=None' --- (str) Non-mandatory parameter, needed if the call is not from the current table
@@ -36,10 +40,8 @@ Lists table data including column names.
 
 ### Adding data
 ```py
-# MySQL
+values = [['Alex',13],['Rick',9]]
 DB_MYSQL.database_name.table_name.add(values,tabel=None,columns='*')
-# SQLITE
-DB_SQLITE.database_name.table_name.add(values,tabel=None,columns='*')
 ```
 #### Parameters for the add method
 - 'values' --- (list, tuple) Required parameter, needed to add values to tables
@@ -51,25 +53,32 @@ Returns True or False according to the correctness of the request.
 
 ### Data update
 ```py
-# MySQL
-DB_MYSQL.database_name.table_name.update(colval,condition=[],tabel=None)
-# SQLITE
-DB_SQLITE.database_name.table_name.update(colval,condition=[],tabel=None)
+colval = {"name":"Keven"}
+condition = {
+    "where":{
+        "id":["==",1],
+        "option":[]
+    }
+}
+DB_MYSQL.database_name.table_name.update(colval,condition=condition,tabel=None)
 ```
 #### Parameters for the update method
 - 'colval' --- (dict) Required parameter, needed to change the value in the table
 - 'tabel=None' --- (str) Non-mandatory parameter, needed if the call is not from the current table
-- 'condition=None' --- (dict) Non-obligatory parameter, necessary if some conditions are met or an operation in the form of a dictionary
+- 'condition=[]' --- (dict) Non-obligatory parameter, necessary if some conditions are met or an operation in the form of a dictionary
 
 #### Request result
 Returns True or False according to the correctness of the request.
 
 ### Data deletion
 ```py
-# MySQL
-DB_MYSQL.database_name.table_name.delet(tabel=None,condition=None)
-# SQLITE
-DB_SQLITE.database_name.table_name.delet(tabel=None,condition=None)
+condition = {
+    "where":{
+        "id":["!=",5],
+        "option":[]
+    }
+}
+DB_MYSQL.database_name.table_name.delet(tabel=None,condition=condition)
 ```
 #### Parameters for the delet method
 - 'tabel=None' --- (str) Non-mandatory parameter, needed if the call is not from the current table
