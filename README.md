@@ -41,7 +41,8 @@ Lists table data including column names.
 ### Adding data
 ```py
 values = [['Alex',13],['Rick',9]]
-DB_MYSQL.database_name.table_name.add(values,tabel=None,columns='*')
+columns = ['name','age']
+DB_MYSQL.database_name.table_name.add(values,tabel=None,columns=columns)
 ```
 #### Parameters for the add method
 - 'values' --- (list, tuple) Required parameter, needed to add values to tables
