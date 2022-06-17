@@ -1,22 +1,14 @@
-from topconnect.connect import gt
-from topconnect.objectdict import dict_to_object as do
+import sys
+import os
+sys.path.insert(0, os.path.dirname(__file__))
+from connect import gt
+from objectdict import dict_to_object as do
+from typesql import *
 import datetime
 import time
 from accessify import protected
 
-
-
-VERSION = (1,1,1,'AAA',False)
-AUTCHER = {
-	'name':'Gor',
-	'surname':'Apinyan',
-	'company':'PAW©',
-	'date_create':'2021-04-14 09:44',
-	'title':'Paw Project',
-	'programming_language':'Python v. +3.x'
-}
-
-class QueryRead(object):
+class QueryRead(do):
 
 	ERROR_DEBUG = False
 	ERROR_MSG = []
@@ -24,14 +16,13 @@ class QueryRead(object):
 	REQ = []
 	APPLICATION = "SELECT"
 	RESULT = None
-	DATA_BASE_TABELS = None
-	DO = do()
 
 	def __init__(self, method, data, number=0):
 		super(QueryRead, self).__init__()
 		self.METHOD = method
 		self.DATA = data
 		self.NUMBER = int(number)
+		self.TS = TS(method)
 		self.enjoy()
 
 	@protected
@@ -47,28 +38,45 @@ class QueryRead(object):
 				self.REQ,
 				self.NUMBER
 			)
-			self.TIME_OUT = time.time() - TIME_START
-			return self.GO_SQL_CON.sqlRes
+			if not self.GO_SQL_CON.error:
+				self.DB_NAME = self.GO_SQL_CON.DB_NAME
+				self.TIME_OUT = time.time() - TIME_START
+				return self.GO_SQL_CON.sqlRes
+			else:
+				for e in self.GO_SQL_CON.errorMSG:
+					raise BaseException(e)
 		except BaseException as e:
 			self.error_debug(e)
 			raise e
 
-	def query(self,focus, req=[], application="SELECT"):
+	def query(self,focus, req=[], application="SELECT",num=0):
 		self.APPLICATION = application
 		self.FOCUS = focus
 		self.REQ = req
+		self.NUMBER = num
 		return self.start()
 
 	@protected
-	def all_values(self,focus):
+	def all_values(self,focus,num=0):
 		self.APPLICATION = "SELECT"
 		self.FOCUS = focus+"|*"
+		self.NUMBER = num
 		return self.start()
 
 	@protected
-	def all_columns(self,focus):
+	def all_columns(self,focus,num=0):
 		self.APPLICATION = "SHOW_COLUMNS"
 		self.FOCUS = focus
+		self.NUMBER = num
+		# print(focus)
+		return self.start()
+
+	@protected
+	def fields(self,focus,num=0):
+		self.APPLICATION = "FIELDS"
+		self.FOCUS = focus
+		self.NUMBER = num
+		# print(focus)
 		return self.start()
 
 	@protected
@@ -92,28 +100,60 @@ class QueryRead(object):
 				values[j].append(x[index])
 		return values
 
+	@protected
+	def valid(self,k):
+		n = ["database","dbFile"]
+		i = 0
+		key = None
+		while len(n) > i:
+			try:
+				if n[i] == "dbFile":
+					key = "_".join(k[n[i]].split("/")[-2:]).split(".")[0]
+				elif n[i] == "database":
+					key = k["database"]
+				if key:
+					return key
+				else:
+					i += 1
+			except KeyError:
+				i += 1
+
 	def enjoy(self):
-		result = {}
-		arr = []
-		fr = {"db":[]}
+		fr = {}
+		name = self.DATA[self.METHOD]
 		a = self.query("1",[],"SHOW_TABEL")
 		if a != None:
 			if len(a) > 0:
-				for j in range(0,len(a)):
-					for i in a[j]:
-						c = self.all_columns(i[0])
-						v = self.all_values(i[0])
-						result[i[0]] = {
-							"LENGTH":i[1],
-							"COLUMNS":list(c[0]),
-							"VALUES":self.values_res(v,c),
-							"FETCHALL":self.fetchall_res(v,c),
-							"NAME":i[0]
-						}
-						arr.append(i[0])
-					fr['db'].append(result)
-		self.DO.start(fr,self,arr)
-		self.DATA_BASE_TABELS = self.DO
+				for x in range(0,len(name)):
+					result = {
+						"INDEX":x+1,
+						"TS":self.TS
+					}
+					arr = []
+					kol = self.valid(name[x])
+					if kol:
+						# print(a[kol])
+						for j in range(0,len(a[kol])):
+							for i in a[kol][j]:
+								c = self.all_columns(i[0],x+1)[kol]
+								v = self.all_values(i[0],x+1)[kol]
+								val = self.values_res(v,c)
+								fet = self.fetchall_res(v,c)
+								result[i[0]] = {
+									"LENGTH":i[1] if len(i) > 1 else len(val),
+									"TYPE":self.fields(i[0],x+1)[kol][0],
+									"COLUMNS":list(c[0]),
+									"VALUES": val,
+									"FETCHALL":fet,
+									"NAME":i[0],
+									"INDEX":x+1,
+									"DATANAME":self.METHOD
+								}
+								arr.append(i[0])
+							result["ALL_TABLES"] = arr
+							fr[kol] = result
+						# print(fr)
+						self.startDO(kol,fr,self.METHOD,self,arr)
 
 	def reset(self):
 		self.ERROR_DEBUG = False

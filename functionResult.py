@@ -9,7 +9,7 @@ class SUMM(object):
 		for i in d:
 			if len(a) == len(i):
 				for j in range(len(i)):
-					if type(i[j]) is int:
+					if ((type(i[j]) is int) or (type(i[j]) is float)):
 						a[j] += i[j]
 					elif type(i[j]) is str:
 						if i[j].isdigit():
@@ -20,7 +20,7 @@ class SUMM(object):
 						a[j] = None
 			else:
 				for j in range(len(i)):
-					if type(i[j]) is int:
+					if ((type(i[j]) is int) or (type(i[j]) is float)):
 						a.append(i[j])
 					elif type(i[j]) is str:
 						if i[j].isdigit():
@@ -34,7 +34,7 @@ class SUMM(object):
 		for i in d:
 			if type(i) is list:
 				for j in i:
-					if type(j) is int:
+					if ((type(j) is int) or (type(j) is float)):
 						a += j
 					elif type(j) is str:
 						if j.isdigit():
@@ -44,7 +44,7 @@ class SUMM(object):
 					else:
 						return None
 			else:
-				if type(i) is int:
+				if ((type(i) is int) or (type(i) is float)):
 					a += i
 				elif type(i) is str:
 					if i.isdigit():
@@ -66,7 +66,7 @@ class OP(object):
 		for i in d:
 			if len(a) == len(i):
 				for j in range(len(i)):
-					if type(i[j]) is int:
+					if ((type(i[j]) is int) or (type(i[j]) is float)):
 						a[j] *= i[j]
 					elif type(i[j]) is str:
 						if i[j].isdigit():
@@ -77,7 +77,7 @@ class OP(object):
 						a = None
 			else:
 				for j in range(len(i)):
-					if type(i[j]) is int:
+					if ((type(i[j]) is int) or (type(i[j]) is float)):
 						a.append(i[j])
 					elif type(i[j]) is str:
 						if i[j].isdigit():
@@ -91,7 +91,7 @@ class OP(object):
 		for i in d:
 			if type(i) is list:
 				for j in i:
-					if type(j) is int:
+					if ((type(j) is int) or (type(j) is float)):
 						a *= j
 					elif type(j) is str:
 						if j.isdigit():
@@ -101,7 +101,7 @@ class OP(object):
 					else:
 						return None
 			else:
-				if type(i) is int:
+				if ((type(i) is int) or (type(i) is float)):
 					a *= i
 				elif type(i) is str:
 					if i.isdigit():
@@ -123,7 +123,7 @@ class DIV(object):
 		for i in d:
 			if len(a) == len(i):
 				for j in range(len(i)):
-					if type(i[j]) is int:
+					if ((type(i[j]) is int) or (type(i[j]) is float)):
 						a[j] /= i[j]
 					elif type(i[j]) is str:
 						if i[j].isdigit():
@@ -134,7 +134,7 @@ class DIV(object):
 						a[j] = None
 			else:
 				for j in range(len(i)):
-					if type(i[j]) is int:
+					if ((type(i[j]) is int) or (type(i[j]) is float)):
 						a.append(i[j])
 					elif type(i[j]) is str:
 						if i[j].isdigit():
@@ -148,7 +148,7 @@ class DIV(object):
 		for i in d:
 			if type(i) is list:
 				for j in i:
-					if type(j) is int:
+					if ((type(j) is int) or (type(j) is float)):
 						a = j/a
 					elif type(j) is str:
 						if j.isdigit():
@@ -158,7 +158,7 @@ class DIV(object):
 					else:
 						return None
 			else:
-				if type(i) is int:
+				if ((type(i) is int) or (type(i) is float)):
 					a = i/a
 				elif type(i) is str:
 					if i.isdigit():
@@ -180,7 +180,7 @@ class SUBT(object):
 		for i in d:
 			if len(a) == len(i):
 				for j in range(len(i)):
-					if type(i[j]) is int:
+					if ((type(i[j]) is int) or (type(i[j]) is float)):
 						a[j] -= i[j]
 					elif type(i[j]) is str:
 						if i[j].isdigit():
@@ -191,7 +191,7 @@ class SUBT(object):
 						a[j] = None
 			else:
 				for j in range(len(i)):
-					if type(i[j]) is int:
+					if ((type(i[j]) is int) or (type(i[j]) is float)):
 						a.append(i[j])
 					elif type(i[j]) is str:
 						if i[j].isdigit():
@@ -207,7 +207,7 @@ class SUBT(object):
 			if type(i) is list:
 				if a == None: a = i[0]
 				for j in range(1,len(i)):
-					if type(i[j]) is int:
+					if ((type(i[j]) is int) or (type(i[j]) is float)):
 						a -= i[j]
 					elif type(i[j]) is str:
 						if i[j].isdigit():
@@ -218,7 +218,7 @@ class SUBT(object):
 						return None
 			else:
 				if a == None: a = d[0]
-				if type(d[n]) is int:
+				if ((type(d[n]) is int) or (type(d[n]) is float)):
 					a -= d[n]
 				elif type(d[n]) is str:
 					if d[n].isdigit():
@@ -241,7 +241,7 @@ class DIV_RES(object):
 		for i in d:
 			if len(a) == len(i):
 				for j in range(len(i)):
-					if type(i[j]) is int:
+					if ((type(i[j]) is int) or (type(i[j]) is float)):
 						a[j] //= i[j]
 					elif type(i[j]) is str:
 						if i[j].isdigit():
@@ -252,7 +252,7 @@ class DIV_RES(object):
 						a[j] = None
 			else:
 				for j in range(len(i)):
-					if type(i[j]) is int:
+					if ((type(i[j]) is int) or (type(i[j]) is float)):
 						a.append(i[j])
 					elif type(i[j]) is str:
 						if i[j].isdigit():
@@ -266,7 +266,7 @@ class DIV_RES(object):
 		for i in d:
 			if type(i) is list:
 				for j in i:
-					if type(j) is int:
+					if ((type(j) is int) or (type(j) is float)):
 						a //= j
 					elif type(j) is str:
 						if j.isdigit():
@@ -276,7 +276,7 @@ class DIV_RES(object):
 					else:
 						return None
 			else:
-				if type(i) is int:
+				if ((type(i) is int) or (type(i) is float)):
 					a //= i
 				elif type(i) is str:
 					if i.isdigit():

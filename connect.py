@@ -60,7 +60,7 @@ class gt(object):
 	
 
 	def __init__(self, Type, con, method="SELECT", query="", req=[], num=0):
-		self.sqlRes = []
+		self.sqlRes = {}
 		if num >= 0:
 			if query != "":
 				self.query = query
@@ -70,27 +70,36 @@ class gt(object):
 			if num > 0:
 				self.con = con[Type][int(num) - 1]
 				if self.rt != False:
-					self.sqlRes = [self.rt(self.method, self.con, self.query, self.req).result()]
+					self.error = False
+					self.errorMSG = []
+					db = self.rt(self.method, self.con, self.query, self.req)
+					self.sqlRes[db.DB_NAME] = [db.result()]
+					self.DB_NAME = db.DB_NAME
 				else:
 					self.error = True
-					self.errorMSG.append("Неу(далось найти объект")
+					self.errorMSG.append("Не удалось найти объект")
 			elif num == 0:
 				for i in con[Type]:
 					if self.rt != False:
-						self.sqlRes.append(self.rt(self.method, i, self.query,self.req).result())
+						self.error = False
+						self.errorMSG = []
+						db = self.rt(self.method, i, self.query, self.req)
+						self.sqlRes[db.DB_NAME] = [db.result()]
+						self.DB_NAME = db.DB_NAME
+						# self.sqlRes.append(self.rt(self.method, i, self.query,self.req).result())
 					else:
 						self.error = True
-						self.errorMSG.append("Неудалось найти объект")
+						self.errorMSG.append("Не удалось найти объект")
 		else:
 				self.error = True
 				self.errorMSG.append("Данные не верные")
 
 
 	def str_to_class(self, s):
-		DATA_DIR = os.path.dirname(__file__) + "/queryPY/"
+		DATA_DIR = os.path.dirname(__file__)
 		if os.path.isdir(DATA_DIR):
-			if os.path.isfile(DATA_DIR + s + ".py"):
-				module = imp.load_source(s, DATA_DIR + s + ".py")
+			if os.path.isfile(os.path.join(DATA_DIR ,s + ".py")):
+				module = imp.load_source(s, os.path.join(DATA_DIR ,s + ".py"))
 				return module.queryPY
 		return False
 

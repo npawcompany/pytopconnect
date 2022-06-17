@@ -1,37 +1,43 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(__file__))
 from accessify import protected,private
 from math import ceil
+from difflib import SequenceMatcher
 import random
 import json
 import urllib.parse
 import datetime, time
-import imp
-from topconnect.functionResult import *
+import types
+import re
+from functionResult import *
 
-
-class dict_to_object(object):
+class dict_to_object:
 	
-	ALL_TABELS = None
+	ALL_TABLES = None
 	QR = None
 	NAME = None
+	DATANAME = None
 	END_RESULT = END_RESULT
 	
-	def __init__(self, d=None, qr=None, all_tabels=[],t=False):
+	def __init__(self,d=None,dn=None,qr=None,all_tables=[],x={},t=False):
 		if t:
-			self.ALL_TABELS = all_tabels
-			self.setAttributes(d,qr)
+			self.setAttributes(d,dn,qr,all_tables,x)
 			self.QR = qr
 
-	@private
-	def setAttributes(self,d,qr):
+	def setAttributes(self,d,dn,qr,all_tables,ind):
 		for a, b in d.items():
 			if isinstance(b, (list, tuple)):
-				setattr(self, a, [dict_to_object(x,qr,t=True) if isinstance(x, dict) else x for x in b])
+				setattr(self, a, [dict_to_object(x,dn,qr,all_tables,ind,t=True) if isinstance(x, dict) else x for x in b])
 			else:
-				setattr(self, a, dict_to_object(b,qr,t=True) if isinstance(b, dict) else b)
+				setattr(self, a, dict_to_object(b,dn,qr,all_tables,ind,t=True) if isinstance(b, dict) else b)
 
-	def start(self, d, qr=None, all_tabels=[]):
-		self.ALL_TABELS = all_tabels
-		self.setAttributes(d,qr)
+	def startDO(self,name,d,dn,qr=None,all_tables=[],x={}):
+		try:
+			ob = getattr(self,name)
+			ob.setAttributes(d[name],dn,qr,all_tables,x)
+		except AttributeError as e:
+			self.setAttributes(d,dn,qr,all_tables,x)
 		self.QR = qr
 
 	@protected
@@ -145,6 +151,12 @@ class dict_to_object(object):
 		else:
 			return a[0]
 
+	@protected
+	def array_value_to_str(self,arr):
+		for i in range(0,len(arr)):
+			arr[i] = str(arr[i])
+		return arr
+
 			
 	@protected
 	def condition_grupp(self,obj,cond):
@@ -171,6 +183,45 @@ class dict_to_object(object):
 							for j in range(0,len(g)):
 								if g[j]:
 									result.append(obj[j])
+				elif i == 'like':
+					if len(cond[i]) == 3:
+						if cond[i][0].replace(" ","") != '':
+							arr = []
+							for dic in result:
+								res = []
+								for key in cond[i][1]:
+									try:
+										res.append(dic.GetAttribute(key))
+									except KeyError:
+										pass
+								res = self.array_value_to_str(res)
+								if cond[i][2]:
+									if all(re.search(str(wi).upper()," ".join(res).upper()) for wi in list(filter(None,cond[i][0].split(" ")))):
+										arr.append(dic)
+								else:
+									if any(re.search(str(wi).upper()," ".join(res).upper()) for wi in list(filter(None,cond[i][0].split(" ")))):
+										arr.append(dic)
+							result = arr
+				elif i == "search":
+					if len(cond[i]) == 4:
+						if cond[i][0].replace(" ","") != '':
+							arr = []
+							a = cond[i][0].strip().upper()
+							for dic in result:
+								res = []
+								for key in cond[i][1]:
+									try:
+										res.append(dic.GetAttribute(key))
+									except KeyError:
+										pass
+								res = self.array_value_to_str(res)
+								if cond[i][2]:
+									if all([SequenceMatcher(lambda x: x in [' ','\t','\n','\r'],a,b.upper()).ratio() >= (len(a)/len(a+b))+cond[i][3] for b in res]):
+										arr.append(dic)
+								else:
+									if any([SequenceMatcher(lambda x: x in [' ','\t','\n','\r'],a,b.upper()).ratio() >= (len(a)/len(a+b))+cond[i][3] for b in res]):
+										arr.append(dic)
+							result = arr
 				elif i == 'limit':
 					if len(cond[i]) == 1:
 						result = result[cond[i][0]:]
@@ -233,7 +284,7 @@ class dict_to_object(object):
 								# print(self.END_RESULT.__dict__.keys(),j)
 							else:
 								array = result
-							# print(default_function[cond[i][j][0]](array,cond[i][j][2]).result)
+							# print(default_function[cond[i][j][0]](array,cond[i][j][2]).result,array)
 							if j in list(self.END_RESULT.__dict__.keys()):
 								delattr(self.END_RESULT, j)
 								setattr(self.END_RESULT, j, default_function[cond[i][j][0]](array,cond[i][j][2]).result)
@@ -281,47 +332,85 @@ class dict_to_object(object):
 	def help(self):
 		return self.__dict__
 
-	def get(self,tabel=None,columns="*",condition=None):
-		if ((self.NAME != None) and (tabel == None)):
+	def get(self,table=None,columns="*",condition=None):
+		if ((self.NAME != None) and (table == None)):
 			a = self
 		else:
-			a = self.GetAttribute(tabel)
+			a = self.GetAttribute(table)
 		b = self.condition_grupp(a.VALUES,condition)
 		if columns != "*":
 			return self.condition_f(b, list(filter(None,columns.replace(" ","").replace("\t","").split(","))))
 		else:
 			return self.condition_f(b,a.COLUMNS)
 
-	def add(self,values,tabel=None,columns='*'):
+	def get2(self,table=None,columns="*",condition=None):
+		self.QR.enjoy()
+		if ((self.NAME != None) and (table == None)):
+			a = self
+		else:
+			a = self.GetAttribute(table)
+		b = self.condition_grupp(a.VALUES,condition)
+		if columns != "*":
+			return self.condition_f(b, list(filter(None,columns.replace(" ","").replace("\t","").split(","))))
+		else:
+			return self.condition_f(b,a.COLUMNS)
+
+	def add(self,values,table=None,columns='*',t=True,k=0):
 		if self.NAME != None:
-			tabel = self.NAME
-		if type(tabel) is str:
+			table = self.NAME
+		if type(table) is str:
 			result = None
 			if columns == '*':
 				columns = self.COLUMNS
 			if (isinstance(columns, (list, tuple)) and isinstance(values, (list, tuple))):
 				n = len(columns)
-				if len(values) > 0:
-					columns = "&".join(columns)
-					result = ""
-					if len(values) <= 80:
-						values = self.sbor(values,n)
-						result = tabel+"|"+columns+"=>"+values
-					else:
-						m = (len(values)//80)+2
-						fas = []
-						for i in self.parting(values,m):
-							fas.append(tabel+"|"+columns+"=>"+self.sbor(values,n))
-						result = ";".join(fas)
-					# print(result)
-					a = self.QR.query(result,[],"INSERT")
-					self.QR.enjoy()
-					return a
+				if t:
+					if len(values) > 0:
+						columns = "&".join(columns)
+						result = ""
+						if len(values) <= 80:
+							values = self.sbor(values,n)
+							result = table+"|"+columns+"=>"+values
+						else:
+							m = (len(values)//80)+2
+							fas = []
+							for i in self.parting(values,m):
+								fas.append(table+"|"+columns+"=>"+self.sbor(values,n))
+							result = ";".join(fas)
+						# print(result)
+						a = self.QR.query(result,[],"INSERT",self.INDEX)
+						self.QR.enjoy()
+						return a
+				else:
+					if len(values) == n:
+						# print(columns)
+						columns = "&".join(columns)
+						result = ""
+						arr = []
+						while((len(arr) < k) and (len(values[-1]) > 0)):
+							o = []
+							for i in range(0,n):
+								o.append(values[i][0])
+								values[i].pop(0)
+							arr.append(o)
+						if len(arr) <= 80:
+							arr = self.sbor(arr,n)
+							result = table+"|"+columns+"=>"+arr
+						else:
+							m = (len(arr)//80)+2
+							fas = []
+							for i in self.parting(arr,m):
+								fas.append(table+"|"+columns+"=>"+self.sbor(arr,n))
+							result = ";".join(fas)
+						# print(result)
+						a = self.QR.query(result,[],"INSERT",self.INDEX)
+						self.QR.enjoy()
+						return a
 
-	def update(self,colval,condition=[],tabel=None):
+	def update(self,colval,condition=[],table=None):
 		if self.NAME != None:
-			tabel = self.NAME
-		if type(tabel) is str:
+			table = self.NAME
+		if type(table) is str:
 			result = None
 			fas = []
 			if len(condition) > 0:
@@ -335,19 +424,75 @@ class dict_to_object(object):
 					elif type(colval[i]) is float:
 						fas.append(i+"->"+(str(colval[i])))
 					elif type(colval[i]) is bool:
-						fas.append(i+"->"+(str(colval[i])))
+						fas.append(i+"->"+str(int(colval[i])))
 					elif colval[i] == None:
-						fas.append(i+"->"+("NULL"))
-				result = tabel+"|"+",".join(fas)
+						fas.append(i+"->"+("null"))
+				result = table+"|"+",".join(fas)
 				# print(result)
-				a = self.QR.query(result,condition,"UPDATE")
+				a = self.QR.query(result,condition,"UPDATE",self.INDEX)
 				self.QR.enjoy()
 				return a
 
-	def delet(self,tabel=None,condition=None):
+	def delet(self,table=None,condition=None):
 		if self.NAME != None:
-			tabel = self.NAME
-		if type(tabel) is str:
-			a = self.QR.query('{0};'.format(tabel),condition,"DELETE")
+			table = self.NAME
+		if type(table) is str:
+			a = self.QR.query('{0};'.format(table),condition,"DELETE",self.INDEX)
 			self.QR.enjoy()
 			return a
+
+	def type(self,table=None,condition=None):
+		if self.NAME != None:
+			table = self.NAME
+		if type(table) is str:
+			a = self.QR.query('{0};'.format(table),condition,"FIELDS",self.INDEX)
+			self.QR.enjoy()
+			return a
+
+	def create(self,table,*columns,**par):
+		if self.NAME != None:
+			raise TypeError("Нельзя создать таблицу в таблице")
+		try:
+			self.GetAttribute(table)
+			raise AttributeError("Такая таблица существует")
+		except AttributeError:
+			list_col = []
+			key_defn = {
+				"NAME":self.TS.NAME,
+				"DATATYPE":self.TS.DATATYPE,
+				"NULL":self.TS.NULL,
+				"DEFAULT":self.TS.DEFAULT,
+				"KEY":self.TS.KEY,
+				"AUTO":self.TS.AUTO,
+				"COMMENT":self.TS.COMMENT
+			}
+			def is_empty(s):
+				if type(s) is str:
+					if s.replace(" ","") != "":
+						if not s in list_col:
+							list_col.append(s)
+							return True
+						else:
+							raise TypeError(f"Колонка '{s}' уже была добавлена")
+					else:
+						raise TypeError(f"Название колонки является пустой")
+				return False
+			def is_datatype(a):
+				if isinstance(a, (list, tuple)):
+					if len(a) == 2:
+						if type(a[0]) is types.MethodType:
+							return True
+					elif len(a) == 1:
+						return True if type(a[0]) is types.MethodType else False
+				elif type(a) is types.MethodType:
+					return True
+				return False
+			c = list(filter(None,[([list(key_defn.values())[i](j[i]) if i<len(j) else None for i in range(len(key_defn))] if (is_empty(j[0])) and (is_datatype(j[1])) else None) if len(j)>0 else None for j in columns if isinstance(j, (list, tuple)) ]))
+			c = ",".join([ "@".join([i[j] for j in range(len(i)) if i[j] != None ]) for i in c if isinstance(i, (list, tuple))])
+			c = f"{table}=>{','.join([f'{k.upper()}:{v}' for k,v in par.items() if is_empty(v)])}=>{c};"
+			self.QR.query(c,[],"CREATE",self.INDEX)
+			self.QR.enjoy()
+
+
+	def edit(self,table=None,_type=None,*columns):
+		pass
